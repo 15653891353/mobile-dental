@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>可视化修改疾病</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;}
+body{background:#f5f5f5;max-width:480px;margin:0 auto;min-height:100vh;}
+/* 顶部导航栏 */
+.top-nav{background:#fff;padding:16px 12px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:99;}
+.nav-left{display:flex;align-items:center;gap:12px;}
+.close-x{font-size:24px;color:#333;font-weight:300;}
+.title-wrap{text-align:center;flex:1;}
+.main-title{font-size:20px;color:#111;font-weight:500;}
+.sub-title{font-size:13px;color:#666;margin-top:3px;}
+.gen-report-btn{background:#ddea22;color:#111;border:none;border-radius:99px;padding:10px 22px;font-size:16px;font-weight:600;}
+/* 深色主面板容器 */
+.dark-panel{background:#3a3a3c;margin:10px 12px;border-radius:12px;overflow:hidden;color:#fff;}
+.panel-header{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #4e4e50;}
+.panel-title{font-size:17px;font-weight:500;display:flex;gap:8px;align-items:center;}
+.tag-green{background:#cbe02f;color:#111;font-size:12px;padding:3px 8px;border-radius:10px;}
+.arrow-icon{color:#aaa;font-size:18px;}
+/* 口内照网格 3行3列 共8张 */
+.img-grid{padding:12px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.img-card{background:#fff;border-radius:8px;overflow:hidden;text-align:center;position:relative;}
+.img-card.active{outline:3px solid #ddea22;}
+.img-card img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;}
+.img-desc{padding:6px 4px;font-size:11px;color:#222;background:#fff;}
+/* 疾病列表区域 */
+.disease-wrap{margin-top:14px;}
+.disease-group{border-bottom:1px solid #4e4e50;}
+.group-head{padding:12px 16px;display:flex;justify-content:space-between;align-items:center;}
+.group-name{display:flex;align-items:center;gap:8px;font-size:18px;font-weight:500;}
+.red-dot{width:10px;height:10px;border-radius:50%;background:#ff4444;}
+.group-count{color:#ddd;font-size:15px;}
+/* 单条牙位项 */
+.tooth-item{padding:10px 16px;display:flex;align-items:center;justify-content:space-between;border-top:1px solid #444;}
+.tooth-left{display:flex;align-items:center;gap:10px;}
+.check-box{width:18px;height:18px;border:1px solid #ccc;border-radius:3px;}
+.tooth-info{display:flex;flex-direction:column;gap:3px;}
+.tooth-num{font-size:16px;}
+.tooth-tag{background:#cbe02f;color:#111;padding:2px 7px;border-radius:6px;font-size:13px;margin-left:6px;}
+.tooth-disease{font-size:12px;color:#bbb;}
+.tooth-right{display:flex;align-items:center;gap:10px;}
+.small-preview{width:70px;height:70px;background:#eee;border-radius:6px;overflow:hidden;}
+.small-preview img{width:100%;height:100%;object-fit:cover;}
+.edit-btn{border:1px solid #cbe02f;color:#cbe02f;background:transparent;padding:4px 10px;border-radius:6px;font-size:13px;}
+/* 底部操作按钮 */
+.bottom-btns{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:14px 16px;margin-top:10px;}
+.bottom-btn{background:#cbe02f;color:#111;border:none;border-radius:8px;padding:12px;font-size:15px;font-weight:500;}
+/* 弹窗遮罩层 */
+.modal-mask{position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.7);display:none;align-items:center;justify-content:center;z-index:999;}
+.modal-box{width:92%;background:#3a3a3c;border-radius:12px;color:#fff;padding:18px;max-height:85vh;overflow-y:auto;}
+.modal-step-title{font-size:16px;margin-bottom:12px;color:#ddea22;}
+.form-item{margin-bottom:14px;}
+.form-label{font-size:13px;color:#ccc;margin-bottom:6px;display:block;}
+.form-input{width:100%;background:#4e4e50;border:none;border-radius:6px;padding:12px;color:#fff;text-align:center;font-size:15px;}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.next-step{width:100%;background:#ddea22;color:#111;border:none;border-radius:8px;padding:13px;margin-top:12px;font-size:16px;font-weight:500;}
+</style>
+</head>
+<body>
+<!-- 顶部导航 -->
+<div class="top-nav">
+    <div class="nav-left">
+        <span class="close-x">×</span>
+        <span><</span>
+    </div>
+    <div class="title-wrap">
+        <div class="main-title">修改报告</div>
+    </div>
+    <button class="gen-report-btn">生成报告</button>
+</div>
+
+<!-- 主内容面板 -->
+<div class="dark-panel">
+    <!-- 口内照预览区 -->
+    <div class="panel-header">
+        <div class="panel-title">
+            口内照预览
+            <span class="tag-green">新增疾病入口</span>
+        </div>
+        <span class="arrow-icon">⌃</span>
+    </div>
+    <div class="img-grid">
+        <!-- 1 张大嘴巴上颌面 -->
+        <div class="img-card">
+            < img src="1-max-open.jpg" alt="张大嘴巴上颌面">
+            <div class="img-desc">张大嘴巴上颌面</div>
+        </div>
+        <!-- 2 张大嘴巴下颌面 -->
+        <div class="img-card">
+            < img src="2-mand-open.jpg" alt="张大嘴巴下颌面">
+            <div class="img-desc">张大嘴巴下颌面</div>
+        </div>
+        <!-- 3 双颌微张左侧面（高亮选中） -->
+        <div class="img-card active">
+            < img src="3-micro-left.jpg" alt="双颌微张左侧面">
+            <div class="img-desc">双颌微张左侧面</div>
+        </div>
+        <!-- 4 双颌微张正视图 -->
+        <div class="img-card">
+            < img src="4-micro-front.jpg" alt="双颌微张正视图">
+            <div class="img-desc">双颌微张正视图</div>
+        </div>
+        <!-- 5 双颌微张右侧面 -->
+        <div class="img-card">
+            < img src="5-micro-right.jpg" alt="双颌微张右侧面">
+            <div class="img-desc">双颌微张右侧面</div>
+        </div>
+        <!-- 6 自然咬合左侧 -->
+        <div class="img-card">
+            < img src="6-bite-left.jpg" alt="自然咬合左侧">
+            <div class="img-desc">自然咬合左侧</div>
+        </div>
+        <!-- 7 自然咬合正视图 -->
+        <div class="img-card">
+            < img src="7-bite-front.jpg" alt="自然咬合正视图">
+            <div class="img-desc">自然咬合正视图</div>
+        </div>
+        <!-- 8 自然咬合右侧 -->
+        <div class="img-card">
+            < img src="8-bite-right.jpg" alt="自然咬合右侧">
+            <div class="img-desc">自然咬合右侧</div>
+        </div>
+    </div>
+
+    <!-- 疾病列表 -->
+    <div class="panel-header">
+        <div class="panel-title">疾病列表</div>
+        <span class="arrow-icon">⌄</span>
+    </div>
+    <div class="disease-wrap">
+        <!-- 牙列拥挤分组 -->
+        <div class="disease-group">
+            <div class="group-head">
+                <div class="group-name">
+                    <span class="red-dot"></span>
+                    牙列拥挤
+                </div>
+                <span class="group-count">(5)</span>
+            </div>
+            <!-- 单条牙位2-1 -->
+            <div class="tooth-item">
+                <div class="tooth-left">
+                    <div class="check-box"></div>
+                    <div class="tooth-info">
+                        <div class="tooth-num">牙位 <span class="tooth-tag">2-1</span></div>
+                        <div class="tooth-disease">牙列拥挤</div>
+                    </div>
+                </div>
+                <div class="tooth-right">
+                    <div class="small-preview">
+                        < img src="3-micro-left.jpg" alt="病灶缩略图">
+                    </div>
+                    <button class="edit-btn">修改</button>
+                </div>
+            </div>
+            <div class="tooth-item">
+                <div class="tooth-left">
+                    <div class="check-box"></div>
+                    <div class="tooth-info">
+                        <div class="tooth-num">牙位 <span class="tooth-tag">2-2</span></div>
+                        <div class="tooth-disease">牙列拥挤</div>
+                    </div>
+                </div>
+                <div class="tooth-right">
+                    <div class="small-preview">
+                        < img src="3-micro-left.jpg" alt="病灶缩略图">
+                    </div>
+                    <button class="edit-btn">修改</button>
+                </div>
+            </div>
+            <div class="tooth-item">
+                <div class="tooth-left">
+                    <div class="check-box"></div>
+                    <div class="tooth-info">
+                        <div class="tooth-num">牙位 <span class="tooth-tag">3-1</span></div>
+                        <div class="tooth-disease">牙列拥挤</div>
+                    </div>
+                </div>
+                <div class="tooth-right">
+                    <div class="small-preview">
+                        < img src="6-bite-left.jpg" alt="病灶缩略图">
+                    </div>
+                    <button class="edit-btn">修改</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 底部双按钮 -->
+    <div class="bottom-btns">
+        <button class="bottom-btn" id="openAddModal">新增疾病</button>
+        <button class="bottom-btn">移除疾病</button>
+    </div>
+</div>
+
+<!-- 新增疾病弹窗（飞书文档4步流程） -->
+<div class="modal-mask" id="addModal">
+    <div class="modal-box">
+        <div class="modal-step-title">第二步：填写疾病信息</div>
+        <div class="form-item">
+            <label class="form-label">请选择疾病类型</label>
+            <input class="form-input" placeholder="疾病类型">
+        </div>
+        <div class="two-col">
+            <div class="form-item">
+                <label class="form-label">象限</label>
+                <input class="form-input" placeholder="请选择">
+            </div>
+            <div class="form-item">
+                <label class="form-label">牙位</label>
+                <input class="form-input" placeholder="请选择">
+            </div>
+        </div>
+        <div class="modal-step-title" style="margin-top:16px;">第三步：选择对应口内照</div>
+        <div class="img-grid" style="gap:6px;padding:0;">
+            <div class="img-card" style="aspect-ratio:1/1;">
+                < img src="1-max-open.jpg" alt="上颌面">
+            </div>
+            <div class="img-card" style="aspect-ratio:1/1;">
+                < img src="2-mand-open.jpg" alt="下颌面">
+            </div>
+        </div>
+        <button class="next-step">下一步</button>
+    </div>
+</div>
+
+<script>
+// 弹窗控制
+const mask = document.getElementById('addModal');
+const openBtn = document.getElementById('openAddModal');
+openBtn.onclick = ()=> mask.style.display = 'flex';
+mask.onclick = (e)=>{
+    if(e.target === mask) mask.style.display = 'none';
+}
+</script>
+</body>
+</html>
